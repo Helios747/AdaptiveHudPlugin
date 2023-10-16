@@ -1,7 +1,6 @@
 ﻿using System;
 using Dalamud.Game.Command;
 using Dalamud.IoC;
-using Dalamud.Logging;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using XivCommon;
@@ -20,16 +19,19 @@ namespace AdaptiveHud
         private PluginUI PluginUi { get; init; }
         private IGameConfig GameConfig { get; init; }
 
+        private IPluginLog Logger { get; init; }
+
         private int currentLayout = 69;
 
-        private static XivCommonBase? chatHandler { get; set; }
+        private static XivCommonBase ChatHandler { get; set; }
 
 
         public Plugin(
             [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
             [RequiredVersion("1.0")] ICommandManager commandManager,
             [RequiredVersion("1.0")] IFramework framework,
-            [RequiredVersion("1.0")] IGameConfig gameConfig)
+            [RequiredVersion("1.0")] IGameConfig gameConfig,
+            [RequiredVersion("1.0")] IPluginLog logger)
         {
             this.PluginInterface = pluginInterface;
             this.CommandManager = commandManager;
@@ -50,15 +52,16 @@ namespace AdaptiveHud
 
             framework.Update += Check;
 
-            chatHandler = new XivCommonBase(pluginInterface);
+            ChatHandler = new XivCommonBase(pluginInterface);
             GameConfig = gameConfig;
+            this.Logger = logger;
         }
 
         public void Dispose()
         {
             this.PluginUi.Dispose();
             this.CommandManager.RemoveHandler(commandName);
-            chatHandler.Dispose();
+            ChatHandler.Dispose();
         }
 
         private void OnCommand(string command, string args)
@@ -94,13 +97,13 @@ namespace AdaptiveHud
                     {
                         int adjustedLayoutValue = Configuration.LayoutForWindowedMode + 1;
                         string rawCmd = $"/hudlayout {adjustedLayoutValue}";
-                        string cleanCmd = chatHandler.Functions.Chat.SanitiseText(rawCmd);
-                        chatHandler.Functions.Chat.SendMessage(cleanCmd);
+                        string cleanCmd = ChatHandler.Functions.Chat.SanitiseText(rawCmd);
+                        ChatHandler.Functions.Chat.SendMessage(cleanCmd);
                         currentLayout = Configuration.LayoutForWindowedMode;
                     }
                     catch (Exception e)
                     {
-                        PluginLog.LogError("Error sending hudlayout command.", e);
+                        Logger.Error("Error sending hudlayout command.", e);
                     }
                 }
                 else if (GetDisplaySetting() > 0 && currentLayout != Configuration.LayoutForFullscreenMode)
@@ -109,14 +112,14 @@ namespace AdaptiveHud
                     {
                         int adjustedLayoutValue = Configuration.LayoutForFullscreenMode + 1;
                         string rawCmd = $"/hudlayout {adjustedLayoutValue}";
-                        string cleanCmd = chatHandler.Functions.Chat.SanitiseText(rawCmd);
-                        chatHandler.Functions.Chat.SendMessage(cleanCmd);
+                        string cleanCmd = ChatHandler.Functions.Chat.SanitiseText(rawCmd);
+                        ChatHandler.Functions.Chat.SendMessage(cleanCmd);
                         currentLayout = Configuration.LayoutForFullscreenMode;
 
                     }
                     catch (Exception e)
                     {
-                        PluginLog.LogError("Error sending hudlayout command.", e);
+                        Logger.Error("Error sending hudlayout command.", e);
                     }
                 }
 

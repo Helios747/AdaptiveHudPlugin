@@ -1,8 +1,6 @@
 ﻿using ImGuiNET;
 using System;
-using System.Linq;
 using System.Numerics;
-using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 
 namespace AdaptiveHud
@@ -11,7 +9,7 @@ namespace AdaptiveHud
     // to do any cleanup
     class PluginUI : IDisposable
     {
-        private Configuration configuration;
+        private readonly Configuration configuration;
         
         // this extra bool exists for ImGui, since you can't ref a property
         private bool visible = false;
