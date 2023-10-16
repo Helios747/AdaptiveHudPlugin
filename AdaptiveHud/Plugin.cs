@@ -3,43 +3,42 @@ using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Logging;
 using Dalamud.Plugin;
-using Dalamud.Game.ClientState;
-using FFXIVClientStructs.FFXIV.Client.UI.Misc;
+using Dalamud.Plugin.Services;
 using XivCommon;
-using Framework = Dalamud.Game.Framework;
 
 namespace AdaptiveHud
 {
     public sealed class Plugin : IDalamudPlugin
     {
-        public string Name => "Adaptive Hud";
+        public static string Name => "Adaptive Hud";
 
         private const string commandName = "/pah";
 
         private DalamudPluginInterface PluginInterface { get; init; }
-        private CommandManager CommandManager { get; init; }
+        private ICommandManager CommandManager { get; init; }
         private Configuration Configuration { get; init; }
         private PluginUI PluginUi { get; init; }
-        private ClientState ClientState { get; init; } = null!;
-        private Framework Framework { get; init; } = null!;
+        private IGameConfig GameConfig { get; init; }
 
         private int currentLayout = 69;
 
-        private XivCommonBase chatHandler = new();
+        private static XivCommonBase? chatHandler { get; set; }
 
 
         public Plugin(
             [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-            [RequiredVersion("1.0")] CommandManager commandManager,
-            [RequiredVersion("1.0")] Framework framework)
+            [RequiredVersion("1.0")] ICommandManager commandManager,
+            [RequiredVersion("1.0")] IFramework framework,
+            [RequiredVersion("1.0")] IGameConfig gameConfig)
         {
             this.PluginInterface = pluginInterface;
             this.CommandManager = commandManager;
-            
+
 
             this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             this.Configuration.Initialize(this.PluginInterface);
             this.PluginUi = new PluginUI(this.Configuration);
+            this.GameConfig = GameConfig;
 
             this.CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
             {
@@ -50,6 +49,9 @@ namespace AdaptiveHud
             this.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
 
             framework.Update += Check;
+
+            chatHandler = new XivCommonBase(pluginInterface);
+            GameConfig = gameConfig;
         }
 
         public void Dispose()
@@ -74,10 +76,13 @@ namespace AdaptiveHud
         {
             this.PluginUi.SettingsVisible = true;
         }
-        private unsafe int GetDisplaySetting()
+
+        private int GetDisplaySetting()
         {
-            return ConfigModule.Instance() == null ? 0 : ConfigModule.Instance()->GetIntValue(20);
+            GameConfig.System.TryGetUInt("ScreenMode", out var retVal);
+            return (int)retVal;
         }
+
         private void Check(object? _)
         {
             if (Configuration.LayoutForWindowedMode != Configuration.LayoutForFullscreenMode)
@@ -117,6 +122,5 @@ namespace AdaptiveHud
 
             }
         }
-
     }
 }
