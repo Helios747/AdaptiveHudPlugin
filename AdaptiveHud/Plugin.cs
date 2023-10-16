@@ -3,10 +3,7 @@ using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Logging;
 using Dalamud.Plugin;
-using Dalamud.Game.ClientState;
-using FFXIVClientStructs.FFXIV.Client.UI.Misc;
-using XivCommon;
-using Framework = Dalamud.Game.Framework;
+using Dalamud.Plugin.Services;
 
 namespace AdaptiveHud
 {
@@ -17,21 +14,20 @@ namespace AdaptiveHud
         private const string commandName = "/pah";
 
         private DalamudPluginInterface PluginInterface { get; init; }
-        private CommandManager CommandManager { get; init; }
+        private ICommandManager CommandManager { get; init; }
         private Configuration Configuration { get; init; }
         private PluginUI PluginUi { get; init; }
-        private ClientState ClientState { get; init; } = null!;
-        private Framework Framework { get; init; } = null!;
+        private IGameConfig GameConfig { get; }
 
         private int currentLayout = 69;
 
-        private XivCommonBase chatHandler = new();
-
+        private Chat ch = new Chat();
 
         public Plugin(
             [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-            [RequiredVersion("1.0")] CommandManager commandManager,
-            [RequiredVersion("1.0")] Framework framework)
+            [RequiredVersion("1.0")] ICommandManager commandManager,
+            [RequiredVersion("1.0")] IFramework framework,
+            [RequiredVersion("1.0")] IGameConfig GameConfig)
         {
             this.PluginInterface = pluginInterface;
             this.CommandManager = commandManager;
@@ -48,7 +44,6 @@ namespace AdaptiveHud
 
             this.PluginInterface.UiBuilder.Draw += DrawUI;
             this.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
-
             framework.Update += Check;
         }
 
@@ -56,7 +51,6 @@ namespace AdaptiveHud
         {
             this.PluginUi.Dispose();
             this.CommandManager.RemoveHandler(commandName);
-            chatHandler.Dispose();
         }
 
         private void OnCommand(string command, string args)
@@ -74,23 +68,22 @@ namespace AdaptiveHud
         {
             this.PluginUi.SettingsVisible = true;
         }
-        private unsafe int GetDisplaySetting()
-        {
-            return ConfigModule.Instance() == null ? 0 : ConfigModule.Instance()->GetIntValue(20);
-        }
+
+        // Please don't use this as a reference for your plugin. I don't understand half of the shit I had to do
+        // to get XIVCommon's functions working and ripped it out instead.
         private void Check(object? _)
         {
             if (Configuration.LayoutForWindowedMode != Configuration.LayoutForFullscreenMode)
             {
+                GameConfig.System.TryGetUInt("ScreenMode", out var currentScreenMode);
                 // windowed mode
-                if (GetDisplaySetting() == 0 && currentLayout != Configuration.LayoutForWindowedMode)
+                if (currentScreenMode == 0 && currentLayout != Configuration.LayoutForWindowedMode)
                 {
                     try
                     {
                         int adjustedLayoutValue = Configuration.LayoutForWindowedMode + 1;
                         string rawCmd = $"/hudlayout {adjustedLayoutValue}";
-                        string cleanCmd = chatHandler.Functions.Chat.SanitiseText(rawCmd);
-                        chatHandler.Functions.Chat.SendMessage(cleanCmd);
+                        ch.SendMessage(rawCmd);
                         currentLayout = Configuration.LayoutForWindowedMode;
                     }
                     catch (Exception e)
@@ -98,16 +91,14 @@ namespace AdaptiveHud
                         PluginLog.LogError("Error sending hudlayout command.", e);
                     }
                 }
-                else if (GetDisplaySetting() > 0 && currentLayout != Configuration.LayoutForFullscreenMode)
+                else if (currentScreenMode > 0 && currentLayout != Configuration.LayoutForFullscreenMode)
                 {
                     try
                     {
                         int adjustedLayoutValue = Configuration.LayoutForFullscreenMode + 1;
                         string rawCmd = $"/hudlayout {adjustedLayoutValue}";
-                        string cleanCmd = chatHandler.Functions.Chat.SanitiseText(rawCmd);
-                        chatHandler.Functions.Chat.SendMessage(cleanCmd);
+                        ch.SendMessage(rawCmd);
                         currentLayout = Configuration.LayoutForFullscreenMode;
-
                     }
                     catch (Exception e)
                     {
