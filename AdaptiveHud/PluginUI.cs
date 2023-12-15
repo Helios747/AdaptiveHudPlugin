@@ -64,9 +64,9 @@ namespace AdaptiveHud
                 return;
             }
 
-            ImGui.SetNextWindowSize(new Vector2(250, 100), ImGuiCond.Always);
+            ImGui.SetNextWindowSize(new Vector2(250, 100), ImGuiCond.Once);
             if (ImGui.Begin("Adaptive Hud Configuration", ref this.settingsVisible,
-                ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
+                ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
                 string[] layoutOptions = new string[] {"1", "2", "3", "4"};
 
