@@ -3,7 +3,10 @@ using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using Dalamud.Interface.Windowing;
 using XivCommon;
+using AdaptiveHud.Windows;
+
 
 namespace AdaptiveHud
 {
@@ -18,11 +21,10 @@ namespace AdaptiveHud
         private Configuration Configuration { get; init; }
         private PluginUI PluginUi { get; init; }
         private IGameConfig GameConfig { get; init; }
-
         private IPluginLog Logger { get; init; }
-
+        private WindowSystem WindowSystem = new("AdaptiveHud");
+        private ConfigWindow ConfigWindow { get; init; }
         private int currentLayout = 69;
-
         private static XivCommonBase ChatHandler { get; set; }
 
 
