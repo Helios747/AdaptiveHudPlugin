@@ -1,130 +1,110 @@
-﻿using System;
-using Dalamud.Game.Command;
+﻿using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
 using Dalamud.Interface.Windowing;
-using XivCommon;
+using Dalamud.Plugin.Services;
 using AdaptiveHud.Windows;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 
+namespace AdaptiveHud;
 
-namespace AdaptiveHud
+public sealed class Plugin : IDalamudPlugin
 {
-    public sealed class Plugin : IDalamudPlugin
+    [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
+    [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
+    [PluginService] internal static IGameConfig gameConfig { get; private set; } = null!;
+    [PluginService] internal static IFramework framework { get; private set; } = null!;
+    [PluginService] internal static IPluginLog logger { get; private set; } = null!;
+
+    private const string CommandName = "/pah";
+
+    public Configuration Configuration { get; init; }
+
+    public readonly WindowSystem WindowSystem = new("AdaptiveHud");
+
+    // number doesn't mean anything (nice). Just makes sure the first check loop works right
+    private int currentLayout = 69;
+
+    private ConfigWindow ConfigWindow { get; init; }
+
+    public Plugin()
     {
-        public static string Name => "Adaptive Hud";
+        Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
-        private const string commandName = "/pah";
+        ConfigWindow = new ConfigWindow(this);
 
-        private DalamudPluginInterface PluginInterface { get; init; }
-        private ICommandManager CommandManager { get; init; }
-        private Configuration Configuration { get; init; }
-        private PluginUI PluginUi { get; init; }
-        private IGameConfig GameConfig { get; init; }
-        private IPluginLog Logger { get; init; }
-        private WindowSystem WindowSystem = new("AdaptiveHud");
-        private ConfigWindow ConfigWindow { get; init; }
-        private int currentLayout = 69;
-        private static XivCommonBase ChatHandler { get; set; }
+        WindowSystem.AddWindow(ConfigWindow);
 
-
-        public Plugin(
-            [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-            [RequiredVersion("1.0")] ICommandManager commandManager,
-            [RequiredVersion("1.0")] IFramework framework,
-            [RequiredVersion("1.0")] IGameConfig gameConfig,
-            [RequiredVersion("1.0")] IPluginLog logger)
+        CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            this.PluginInterface = pluginInterface;
-            this.CommandManager = commandManager;
+            HelpMessage = "Opens configuration window for Adaptive Hud"
+        });
 
+        PluginInterface.UiBuilder.Draw += DrawUI;
 
-            this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-            this.Configuration.Initialize(this.PluginInterface);
-            this.PluginUi = new PluginUI(this.Configuration);
-            this.GameConfig = GameConfig;
+        // This adds a button to the plugin installer entry of this plugin which allows
+        // to toggle the display status of the configuration ui
+        PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUI;
 
-            this.CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
+        // register the config monitor function to run every framework update tick
+        framework.Update += Check;
+
+    }
+
+    public void Dispose()
+    {
+        WindowSystem.RemoveAllWindows();
+
+        ConfigWindow.Dispose();
+
+        CommandManager.RemoveHandler(CommandName);
+    }
+
+    private void OnCommand(string command, string args)
+    {
+        // in response to the slash command, just toggle the display status of our config ui
+        ToggleConfigUI();
+    }
+
+    private void DrawUI() => WindowSystem.Draw();
+
+    public void ToggleConfigUI() => ConfigWindow.Toggle();
+
+    private int GetDisplaySetting()
+    {
+        // retrieve the current screen mode, fullscreen, borderless, or windowed
+        gameConfig.TryGet(Dalamud.Game.Config.SystemConfigOption.ScreenMode, out uint retVal);
+        return (int)retVal;
+    }
+
+    private void Check(object? _)
+    {
+        if (Configuration.LayoutForWindowedMode != Configuration.LayoutForFullscreenMode)
+        {
+            //windowed
+            if (GetDisplaySetting() == 0 && currentLayout != Configuration.LayoutForWindowedMode)
             {
-                HelpMessage = "Opens configuration window for Adaptive Hud"
-            });
-
-            this.PluginInterface.UiBuilder.Draw += DrawUI;
-            this.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
-
-            framework.Update += Check;
-
-            ChatHandler = new XivCommonBase(pluginInterface);
-            GameConfig = gameConfig;
-            this.Logger = logger;
-        }
-
-        public void Dispose()
-        {
-            this.PluginUi.Dispose();
-            this.CommandManager.RemoveHandler(commandName);
-            ChatHandler.Dispose();
-        }
-
-        private void OnCommand(string command, string args)
-        {
-            // in response to the slash command, just display our main ui
-            this.PluginUi.SettingsVisible = true;
-        }
-
-        private void DrawUI()
-        {
-            this.PluginUi.Draw();
-        }
-
-        private void DrawConfigUI()
-        {
-            this.PluginUi.SettingsVisible = true;
-        }
-
-        private int GetDisplaySetting()
-        {
-            GameConfig.System.TryGetUInt("ScreenMode", out var retVal);
-            return (int)retVal;
-        }
-
-        private void Check(object? _)
-        {
-            if (Configuration.LayoutForWindowedMode != Configuration.LayoutForFullscreenMode)
-            {
-                // windowed mode
-                if (GetDisplaySetting() == 0 && currentLayout != Configuration.LayoutForWindowedMode)
+                //make sure this is never null before trying to access it.
+                unsafe
                 {
-                    try
+                    if (AddonConfig.Instance()->ChangeHudLayout != null)
                     {
-                        int adjustedLayoutValue = Configuration.LayoutForWindowedMode + 1;
-                        string rawCmd = $"/hudlayout {adjustedLayoutValue}";
-                        string cleanCmd = ChatHandler.Functions.Chat.SanitiseText(rawCmd);
-                        ChatHandler.Functions.Chat.SendMessage(cleanCmd);
-                        currentLayout = Configuration.LayoutForWindowedMode;
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.Error("Error sending hudlayout command.", e);
+                        AddonConfig.Instance()->ChangeHudLayout((uint)Configuration.LayoutForWindowedMode);
                     }
                 }
-                else if (GetDisplaySetting() > 0 && currentLayout != Configuration.LayoutForFullscreenMode)
+                currentLayout = Configuration.LayoutForWindowedMode;
+            }
+            //fullscreen or borderless
+            else if (GetDisplaySetting() > 0 && currentLayout != Configuration.LayoutForFullscreenMode)
+            {
+                unsafe
                 {
-                    try
+                    if (AddonConfig.Instance()->ChangeHudLayout != null)
                     {
-                        int adjustedLayoutValue = Configuration.LayoutForFullscreenMode + 1;
-                        string rawCmd = $"/hudlayout {adjustedLayoutValue}";
-                        string cleanCmd = ChatHandler.Functions.Chat.SanitiseText(rawCmd);
-                        ChatHandler.Functions.Chat.SendMessage(cleanCmd);
-                        currentLayout = Configuration.LayoutForFullscreenMode;
-
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.Error("Error sending hudlayout command.", e);
+                        AddonConfig.Instance()->ChangeHudLayout((uint)Configuration.LayoutForFullscreenMode);
                     }
                 }
-
+                currentLayout = Configuration.LayoutForFullscreenMode;
             }
         }
     }
