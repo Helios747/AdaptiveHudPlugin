@@ -15,11 +15,11 @@ public class ConfigWindow : Window, IDisposable
     // and the window ID will always be "###XYZ counter window" for ImGui
     public ConfigWindow(Plugin plugin) : base("AdaptiveHud Configuration")
     {
-        Flags = ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
+        Flags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
                 ImGuiWindowFlags.NoScrollWithMouse;
 
         Size = new Vector2(250, 100);
-        SizeCondition = ImGuiCond.Always;
+        SizeCondition = ImGuiCond.Once;
 
         Configuration = plugin.Configuration;
     }
