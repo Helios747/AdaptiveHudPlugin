@@ -87,7 +87,7 @@ public sealed class Plugin : IDalamudPlugin
                 //make sure this is never null before trying to access it.
                 unsafe
                 {
-                    if (AddonConfig.Instance()->ChangeHudLayout != null)
+                    if (AddonConfig.Instance() != null)
                     {
                         AddonConfig.Instance()->ChangeHudLayout((uint)Configuration.LayoutForWindowedMode);
                     }
@@ -99,7 +99,7 @@ public sealed class Plugin : IDalamudPlugin
             {
                 unsafe
                 {
-                    if (AddonConfig.Instance()->ChangeHudLayout != null)
+                    if (AddonConfig.Instance() != null)
                     {
                         AddonConfig.Instance()->ChangeHudLayout((uint)Configuration.LayoutForFullscreenMode);
                     }
