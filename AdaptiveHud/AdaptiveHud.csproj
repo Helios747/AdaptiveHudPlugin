@@ -1,22 +1,22 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-<Sdk Name="Dalamud.NET.Sdk" Version="13.0.0" />
+<Sdk Name="Dalamud.NET.Sdk" Version="14.0.1" />
   <PropertyGroup>
     <Authors></Authors>
     <Company></Company>
-    <Version>1.0.13.0</Version>
+    <Version>1.0.14.0</Version>
     <Description>Adaptive hud</Description>
     <Copyright></Copyright>
     <PackageProjectUrl>https://github.com/Helios747/AdaptiveHudPlugin</PackageProjectUrl>
-    <AssemblyVersion>1.0.13.0</AssemblyVersion>
-    <FileVersion>1.0.13.0</FileVersion>
+    <AssemblyVersion>1.0.14.0</AssemblyVersion>
+    <FileVersion>1.0.14.0</FileVersion>
 	<Nullable>enable</Nullable>
 	<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
 
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <TargetFramework>net9.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <Platforms>x64</Platforms>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
