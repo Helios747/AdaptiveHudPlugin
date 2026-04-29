@@ -8,8 +8,8 @@
     <Description>Adaptive hud</Description>
     <Copyright></Copyright>
     <PackageProjectUrl>https://github.com/Helios747/AdaptiveHudPlugin</PackageProjectUrl>
-    <AssemblyVersion>1.0.15.0</AssemblyVersion>
-    <FileVersion>1.0.15.0</FileVersion>
+    <AssemblyVersion>1.0.15.1</AssemblyVersion>
+    <FileVersion>1.0.15.1</FileVersion>
 	<Nullable>enable</Nullable>
 	<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
